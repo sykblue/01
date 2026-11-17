@@ -1,0 +1,509 @@
+<title>공용차 배차판</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+  /* 1999년 홈페이지 · 기준 화면 800×600 (4:3) 창 하나 · 일부러 한 가지 모습만 씀 */
+  :root {
+    --desk: #008080; --face: #c0c0c0; --hi: #ffffff; --lo: #808080; --dark: #000000;
+    --title1: #000080; --title2: #1084d0;
+    --ink: #000000; --sub: #404040;
+    --ok: #008000; --busy: #c00000; --repair: #6b6b00;
+    --paper: #ffffff; --row: #ffffe1; --led-bg: #000000; --led-ok: #00ff00; --led-busy: #ff3333; --led-all: #ffff00;
+    --font-ui: "Gulim", "굴림", "Dotum", "돋움", Tahoma, "MS Sans Serif", sans-serif;
+    --font-head: "Times New Roman", "Batang", "바탕", serif;
+    --font-mono: "Courier New", "GulimChe", monospace;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; color: var(--ink); font: 13px/1.45 var(--font-ui);
+    background: var(--desk) radial-gradient(rgba(255,255,255,.07) 1px, transparent 1px) 0 0 / 4px 4px;
+    padding-block: 24px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  .win {
+    width: 100%; max-width: 800px; margin: 0 auto; background: var(--face);
+    border: 2px solid; border-color: var(--hi) var(--dark) var(--dark) var(--hi);
+    box-shadow: inset -1px -1px var(--lo), inset 1px 1px #dfdfdf, 4px 4px 0 rgba(0,0,0,.35);
+    display: flex; flex-direction: column; aspect-ratio: 4 / 3; max-height: calc(100vh - 48px); min-height: 560px;
+  }
+  .win, .page, .row > *, .grid > *, .stats > * { min-width: 0; }
+  .titlebar { display: flex; align-items: center; gap: 6px; padding: 3px 4px 3px 6px; color: #fff; font-weight: bold;
+              background: linear-gradient(90deg, var(--title1), var(--title2)); }
+  .titlebar .t { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tb-btn { width: 18px; height: 16px; background: var(--face); color: var(--ink); font: bold 11px/12px Tahoma, sans-serif; text-align: center;
+            border: 1px solid; border-color: var(--hi) var(--dark) var(--dark) var(--hi); }
+  .menubar { display: flex; gap: 14px; padding: 3px 8px; border-bottom: 1px solid var(--lo); }
+  .menubar span:first-letter { text-decoration: underline; }
+  .addr { display: flex; align-items: center; gap: 6px; padding: 4px 8px; border-bottom: 2px groove var(--hi); }
+  .addr .box { flex: 1; background: var(--paper); padding: 2px 6px; font: 12px var(--font-mono); overflow: hidden; white-space: nowrap;
+               border: 2px solid; border-color: var(--lo) var(--hi) var(--hi) var(--lo); }
+  .page { flex: 1; overflow: auto; background: var(--paper); margin: 4px; padding: 10px 14px 16px;
+          border: 2px solid; border-color: var(--lo) var(--hi) var(--hi) var(--lo); }
+  .statusbar { display: flex; gap: 4px; padding: 2px 4px 4px; font-size: 12px; }
+  .statusbar > * { border: 1px solid; border-color: var(--lo) var(--hi) var(--hi) var(--lo); padding: 1px 6px; }
+  .statusbar .grow { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+  .logo { text-align: center; margin: 2px 0 6px; }
+  .logo h1 { margin: 0; font: italic bold 30px var(--font-head); color: var(--title1); text-shadow: 2px 2px 0 #ffcc00; letter-spacing: 1px; text-wrap: balance; }
+  .logo .sub { font-size: 12px; color: var(--sub); }
+  .ticker { overflow: hidden; background: var(--led-bg); color: var(--led-ok); font: 12px var(--font-mono); padding: 2px 0; margin-bottom: 8px; white-space: nowrap; }
+  .ticker span { display: inline-block; padding-left: 100%; animation: scroll 22s linear infinite; }
+  @keyframes scroll { to { transform: translateX(-100%); } }
+  hr { border: 0; border-top: 2px groove #ddd; margin: 10px 0; }
+  .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin-bottom: 8px; }
+  .live { display: inline-flex; align-items: center; gap: 5px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: #800000; border: 1px solid var(--dark); }
+  .dot.on { background: var(--led-ok); animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { background: var(--ok); } }
+  .me { margin-left: auto; }
+
+  .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .stat { text-align: center; padding: 4px; background: var(--face); border: 2px solid; border-color: var(--hi) var(--dark) var(--dark) var(--hi); }
+  .stat b { display: inline-block; min-width: 3.2em; background: var(--led-bg); color: var(--led-all); font: bold 20px var(--font-mono);
+            padding: 0 6px; letter-spacing: 2px; border: 2px inset #888; font-variant-numeric: tabular-nums; }
+  .stat.ok b { color: var(--led-ok); } .stat.busy b { color: var(--led-busy); }
+  .stat span { display: block; font-size: 12px; margin-top: 2px; }
+
+  h2 { font: bold 18px var(--font-head); color: var(--title1); margin: 4px 0 6px; }
+  h2::before { content: "▶ "; color: #ff6600; }
+  h2 small { font: 12px var(--font-ui); color: var(--sub); }
+
+  .table { border: 2px solid; border-color: var(--lo) var(--hi) var(--hi) var(--lo); background: var(--paper); }
+  .row { display: grid; grid-template-columns: 1.3fr 1.2fr .9fr 1.1fr 1.2fr auto; gap: 6px; align-items: center; padding: 4px 6px; border-top: 1px solid var(--face); }
+  .row > * { overflow-wrap: anywhere; }
+  .row:nth-child(odd):not(.head) { background: var(--row); }
+  .row.head { border-top: 0; background: var(--title1); color: #fff; font-weight: bold; font-size: 12px; }
+  .row .plate { font-weight: bold; }
+  .muted { color: var(--sub); font-size: 12px; }
+  .due.late { color: var(--busy); font-weight: bold; animation: blink2 1s steps(1) infinite; }
+  @keyframes blink2 { 50% { color: transparent; } }
+  .empty { padding: 16px; text-align: center; color: var(--sub); font-style: italic; }
+
+  .tools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 8px; }
+  .search { flex: 1 1 220px; display: flex; gap: 4px; align-items: center; }
+  .search input { flex: 1; min-width: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 2px; }
+  input, select { font: inherit; color: var(--ink); background: var(--paper); padding: 3px 5px; border-radius: 0;
+                  border: 2px solid; border-color: var(--lo) var(--hi) var(--hi) var(--lo); }
+  input:focus, select:focus { outline: 1px dotted var(--dark); outline-offset: 1px; }
+  .btn, .chip { font: inherit; color: var(--ink); background: var(--face); cursor: pointer; border-radius: 0; padding: 4px 12px; min-height: 26px;
+                border: 2px solid; border-color: var(--hi) var(--dark) var(--dark) var(--hi); box-shadow: inset -1px -1px var(--lo), inset 1px 1px #dfdfdf; }
+  .btn:active:not(:disabled), .chip[aria-pressed="true"] { border-color: var(--dark) var(--hi) var(--hi) var(--dark); box-shadow: inset 1px 1px var(--lo); padding: 5px 11px 3px 13px; }
+  .chip[aria-pressed="true"] { background: var(--face) repeating-conic-gradient(var(--face) 0 25%, var(--hi) 0 50%) 0 0 / 2px 2px; font-weight: bold; }
+  .btn:focus-visible, .chip:focus-visible { outline: 1px dotted var(--dark); outline-offset: -5px; }
+  .btn { width: 100%; }
+  .btn.small { width: auto; padding: 2px 8px; min-height: 22px; font-size: 12px; }
+  .btn.primary { font-weight: bold; }
+  .btn:disabled { color: var(--lo); text-shadow: 1px 1px var(--hi); cursor: default; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(178px, 1fr)); gap: 8px; }
+  .car { background: var(--face); padding: 6px; display: flex; flex-direction: column; gap: 3px; border: 2px solid; border-color: var(--hi) var(--dark) var(--dark) var(--hi); }
+  .car .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 4px; background: var(--paper); padding: 4px; border: 1px solid var(--lo); }
+  .car .model { font-weight: bold; font-size: 14px; }
+  .car .plate { font: 12px var(--font-mono); }
+  .car .meta, .car .who { font-size: 12px; }
+  .car .who.repair { color: var(--repair); }
+  .car .actions { margin-top: auto; padding-top: 4px; }
+  .badge { font-size: 11px; font-weight: bold; padding: 1px 4px; white-space: nowrap; border: 1px solid; color: #fff; }
+  .badge.ok { background: var(--ok); border-color: #004000; }
+  .badge.busy { background: var(--busy); border-color: #600000; }
+
+  dialog { padding: 0; width: min(420px, calc(100vw - 24px)); background: var(--face); color: var(--ink);
+           border: 2px solid; border-color: var(--hi) var(--dark) var(--dark) var(--hi); box-shadow: inset -1px -1px var(--lo), 4px 4px 0 rgba(0,0,0,.4); }
+  dialog::backdrop { background: rgba(0,0,0,.25); }
+  dialog form { padding: 0 0 10px; display: flex; flex-direction: column; gap: 8px; }
+  dialog form > :not(h3) { margin: 0 10px; }
+  dialog h3 { margin: 2px 2px 4px; padding: 3px 6px; font-size: 13px; color: #fff; background: linear-gradient(90deg, var(--title1), var(--title2)); }
+  dialog .carline { font-size: 12px; background: var(--paper); padding: 4px 6px; border: 1px solid var(--lo); }
+  label { display: flex; flex-direction: column; gap: 2px; font-size: 12px; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .hint { font-size: 12px; color: var(--sub); min-height: 1.2em; }
+  .err { font-size: 12px; color: var(--busy); font-weight: bold; min-height: 1.2em; }
+  .btns { display: flex; gap: 8px; justify-content: flex-end; }
+  .btns .btn { width: 96px; }
+
+  .toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+           background: var(--row); color: var(--ink); border: 1px solid var(--dark); padding: 6px 10px; font-size: 12px; box-shadow: 2px 2px 0 rgba(0,0,0,.4); max-width: calc(100vw - 32px); }
+  .banner { background: #ffff00; color: var(--ink); border: 2px dashed var(--busy); padding: 6px 8px; margin-bottom: 8px; font-weight: bold; }
+  .footer { text-align: center; font-size: 11px; color: var(--sub); margin-top: 12px; }
+  .footer .ie { display: inline-block; border: 1px solid var(--dark); background: var(--paper); padding: 1px 6px; margin: 4px 2px 0; font-family: Tahoma, sans-serif; }
+
+  @media (max-width: 820px) {
+    body { padding-block: 0; padding-left: max(0px, env(safe-area-inset-left, 0px)); padding-right: max(0px, env(safe-area-inset-right, 0px)); }
+    .win { aspect-ratio: auto; max-height: none; min-height: 100vh; border-width: 0; box-shadow: none; }
+    .menubar, .addr .lbl { display: none; }
+    .page { overflow: visible; }
+    .logo h1 { font-size: 24px; }
+  }
+  @media (max-width: 600px) {
+    .page { padding-left: max(10px, env(safe-area-inset-left, 0px)); padding-right: max(10px, env(safe-area-inset-right, 0px)); }
+    .row.head { display: none; }
+    .row { grid-template-columns: minmax(0, 1fr) auto; gap: 1px 8px; }
+    .row > :nth-child(1) { grid-column: 1; grid-row: 1; }
+    .row > :nth-child(6) { grid-column: 2; grid-row: 1 / span 5; }
+    .row > :nth-child(n+2):nth-child(-n+5) { grid-column: 1; font-size: 12px; }
+    .stat b { font-size: 16px; min-width: 0; }
+    .me { margin-left: 0; }
+    .two { grid-template-columns: 1fr; }
+    .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .chip { padding: 4px 8px; }
+  }
+  @media (max-width: 380px) { .grid { grid-template-columns: 1fr; } }
+  @media (prefers-reduced-motion: reduce) { .ticker span, .dot.on, .due.late { animation: none; } .ticker span { padding-left: 0; } }
+</style>
+
+<div class="win">
+  <div class="titlebar">
+    <span aria-hidden="true">🚗</span><span class="t">공용차 배차판 - Microsoft Internet Explorer</span>
+    <span class="tb-btn" aria-hidden="true">_</span><span class="tb-btn" aria-hidden="true">□</span><span class="tb-btn" aria-hidden="true">×</span>
+  </div>
+  <div class="menubar" aria-hidden="true"><span>파일(F)</span><span>편집(E)</span><span>보기(V)</span><span>즐겨찾기(A)</span><span>도움말(H)</span></div>
+  <div class="addr"><span class="lbl">주소(D)</span><span class="box">http://www.carops.co.kr/~fleet/index.html</span></div>
+
+  <div class="page">
+    <div class="logo">
+      <h1>공용차 배차판</h1>
+      <div class="sub">★ 우리 회사 차량 20대 실시간 현황 ★</div>
+    </div>
+    <div class="ticker" aria-hidden="true"><span>*** 차를 빌리면 동료 화면에도 바로 "사용 중"으로 보여요 *** 반납할 때는 꼭 계기판 주행거리를 적어 주세요 *** 정비중인 차는 빌릴 수 없어요 ***</span></div>
+
+    <div class="bar">
+      <span class="live"><i class="dot" id="liveDot"></i><span id="liveText">불러오는 중…</span></span>
+      <span class="me"><label for="meSel" style="display:inline">나: </label><select id="meSel"><option value="">이름 선택</option></select></span>
+    </div>
+    <div id="banner" class="banner" hidden></div>
+
+    <div class="stats">
+      <div class="stat ok"><b id="cntOk">–</b><span>사용 가능</span></div>
+      <div class="stat busy"><b id="cntBusy">–</b><span>사용 중</span></div>
+      <div class="stat"><b id="cntAll">–</b><span>전체 차량</span></div>
+    </div>
+    <hr>
+
+    <section>
+      <h2>배차 현황 <small id="busyNote"></small></h2>
+      <div class="table" id="trips"><div class="empty">배차 현황을 불러오는 중이에요…</div></div>
+    </section>
+    <hr>
+
+    <section>
+      <h2>차량 목록 <small id="listNote"></small></h2>
+      <div class="tools">
+        <label class="search" for="q" style="flex-direction:row">찾기: <input id="q" type="search" placeholder="차종 · 번호 · 위치 · 사용자"></label>
+        <div class="chips" role="group" aria-label="상태 필터">
+          <button class="chip" data-f="all" aria-pressed="true">전체</button>
+          <button class="chip" data-f="ok" aria-pressed="false">사용 가능</button>
+          <button class="chip" data-f="busy" aria-pressed="false">사용 중</button>
+        </div>
+      </div>
+      <div class="grid" id="cars"><div class="empty" style="grid-column:1/-1">차량 20대를 불러오는 중이에요…</div></div>
+    </section>
+
+    <div class="footer">
+      이 홈페이지는 800×600 화면에 최적화되어 있습니다<br>
+      <span class="ie">Best viewed with IE 5.0</span><span class="ie">Netscape 4.7</span>
+    </div>
+  </div>
+  <div class="statusbar"><span class="grow" id="sbText">연결 중…</span><span>🌐 인터넷</span></div>
+</div>
+
+<dialog id="rentDlg">
+  <form id="rentForm" novalidate>
+    <h3>대여하기</h3>
+    <div class="carline" id="rentCar"></div>
+    <div class="two">
+      <label for="rUser">사용자 <select id="rUser"><option value="">선택</option></select></label>
+      <label for="rDept">부서 <input id="rDept"></label>
+    </div>
+    <div class="two">
+      <label for="rDest">목적지 <input id="rDest" placeholder="예: 판교"></label>
+      <label for="rPurpose">용도 <input id="rPurpose" placeholder="예: 거래처 방문"></label>
+    </div>
+    <label for="rDue">반납 예정 <input id="rDue" type="datetime-local"></label>
+    <div class="hint" id="rHint"></div>
+    <div class="err" id="rErr" role="alert"></div>
+    <div class="btns">
+      <button type="button" class="btn" data-close>취소</button>
+      <button type="submit" class="btn primary" id="rSubmit">대여하기</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="retDlg">
+  <form id="retForm" novalidate>
+    <h3>반납하기</h3>
+    <div class="carline" id="retCar"></div>
+    <label for="tKm">반납 주행거리 (km) <input id="tKm" type="number" inputmode="numeric" min="0" step="1"></label>
+    <label for="tBy">반납한 사람 <select id="tBy"></select></label>
+    <div class="hint" id="tHint"></div>
+    <div class="err" id="tErr" role="alert"></div>
+    <div class="btns">
+      <button type="button" class="btn" data-close>취소</button>
+      <button type="submit" class="btn primary" id="tSubmit">반납하기</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const state = { cars: [], staff: [], filter: "all", q: "", db: null, canWrite: true, ready: false };
+
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const km = (n) => Number(n).toLocaleString("ko-KR") + " km";
+const fmt = (iso) => new Date(iso).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false });
+function since(iso) {
+  const m = Math.max(0, Math.round((Date.now() - new Date(iso)) / 60000));
+  return m < 60 ? `${m}분째` : `${Math.floor(m / 60)}시간 ${m % 60}분째`;
+}
+function toLocalInput(d) {
+  const p = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+function toast(msg) {
+  const t = $("toast"); t.textContent = msg; t.hidden = false;
+  clearTimeout(toast.t); toast.t = setTimeout(() => (t.hidden = true), 2800);
+}
+function setLive(on, text) { $("liveDot").classList.toggle("on", on); $("liveText").textContent = text; $("sbText").textContent = text; }
+function showBanner(msg) { $("banner").textContent = msg; $("banner").hidden = !msg; }
+const getMe = () => { try { return localStorage.getItem("carops.me") || ""; } catch { return ""; } };
+const setMe = (v) => { try { localStorage.setItem("carops.me", v); } catch {} };
+
+// 상태: 사용 가능 / 사용 중 (정비중은 '사용 중' 배지 + 정비 표시)
+const status = (c) => (c.trip ? "trip" : c.in_repair ? "repair" : "free");
+const isFree = (c) => status(c) === "free";
+
+// ── 그리기 ──
+function render() {
+  if (!state.ready) return;
+  const cars = state.cars;
+  const busy = cars.filter((c) => c.trip).sort((a, b) => new Date(a.trip.out_at) - new Date(b.trip.out_at));
+  const free = cars.filter(isFree).length, repair = cars.filter((c) => status(c) === "repair").length;
+  $("cntOk").textContent = free; $("cntBusy").textContent = cars.length - free; $("cntAll").textContent = cars.length;
+  $("busyNote").textContent = `운행 중 ${busy.length}대${repair ? ` · 정비 ${repair}대` : ""}`;
+
+  if (!busy.length) {
+    $("trips").innerHTML = `<div class="empty">지금 나가 있는 차가 없어요</div>`;
+  } else {
+    $("trips").innerHTML = `<div class="row head"><div>차량</div><div>사용자</div><div>목적지</div><div>출차</div><div>반납 예정</div><div></div></div>` +
+      busy.map((c) => {
+        const t = c.trip, late = t.due_at && new Date(t.due_at) < Date.now();
+        const due = t.due_at ? `<span class="due ${late ? "late" : ""}">${fmt(t.due_at)}${late ? " · 지남" : ""}</span>` : `<span class="muted">—</span>`;
+        return `<div class="row">
+          <div><div class="plate">${esc(c.plate)}</div><div class="muted">${esc(c.model)}</div></div>
+          <div>${esc(t.user || "미상")} <span class="muted">${esc(t.dept || "")}</span></div>
+          <div>${esc(t.dest || "—")}</div>
+          <div>${fmt(t.out_at)} <div class="muted">${since(t.out_at)}</div></div>
+          <div>${due}</div>
+          <div><button class="btn primary small" data-return="${c.id}" ${state.canWrite ? "" : "disabled"}>반납하기</button></div>
+        </div>`;
+      }).join("");
+  }
+
+  const q = state.q.trim().toLowerCase();
+  const list = cars.filter((c) => {
+    if (state.filter === "ok" && !isFree(c)) return false;
+    if (state.filter === "busy" && isFree(c)) return false;
+    if (!q) return true;
+    return [c.model, c.plate, c.plate.replace(/\s/g, ""), c.place, c.trip?.user, c.fuel].some((v) => String(v ?? "").toLowerCase().includes(q));
+  }).sort((a, b) => isFree(b) - isFree(a) || a.model.localeCompare(b.model, "ko"));
+  $("listNote").textContent = `${list.length}대`;
+  if (!list.length) {
+    $("cars").innerHTML = `<div class="empty" style="grid-column:1/-1">${cars.length ? "조건에 맞는 차가 없어요" : "등록된 차가 없어요"}</div>`;
+    return;
+  }
+  const dis = state.canWrite ? "" : "disabled";
+  $("cars").innerHTML = list.map((c) => {
+    const s = status(c);
+    const badge = s === "free" ? `<span class="badge ok">사용 가능</span>` : `<span class="badge busy">사용 중</span>`;
+    const who = s === "trip" ? `<div class="who">${esc(c.trip.user || "미상")} · ${esc(c.trip.dest || "")}${c.trip.due_at ? ` · ${fmt(c.trip.due_at)}까지` : ""}</div>`
+              : s === "repair" ? `<div class="who repair">🔧 정비중${c.memo ? ` · ${esc(c.memo)}` : ""}</div>` : "";
+    const action = s === "free" ? `<button class="btn primary" data-rent="${c.id}" ${dis}>대여하기</button>`
+                 : s === "trip" ? `<button class="btn" data-return="${c.id}" ${dis}>반납하기</button>`
+                 : `<button class="btn" disabled>빌릴 수 없음</button>`;
+    return `<article class="car">
+      <div class="top"><div><div class="model">${esc(c.model)}</div><div class="plate">${esc(c.plate)}</div></div>${badge}</div>
+      <div class="meta">📍 ${esc(c.place || "—")} · ${esc(c.fuel)} · ${km(c.mileage_km)}</div>
+      ${who}
+      <div class="actions">${action}</div>
+    </article>`;
+  }).join("");
+}
+
+function fillStaff() {
+  const opts = state.staff.map((s) => `<option value="${esc(s.name)}">${esc(s.name)} · ${esc(s.dept)}</option>`).join("");
+  $("meSel").innerHTML = `<option value="">이름 선택</option>` + opts;
+  $("rUser").innerHTML = `<option value="">선택</option>` + opts;
+  $("tBy").innerHTML = opts;
+  $("meSel").value = getMe();
+}
+
+// ── 한 대씩 잠그고 바꾸기 (두 사람이 동시에 눌러도 한 명만 성공) ──
+const holder = "v-" + Math.random().toString(36).slice(2);
+async function withCarLock(id, fn) {
+  const ref = state.db.doc("cars/" + id);
+  const lock = await ref.acquire({ holder, ttlMs: 5000 });
+  if (!lock.acquired) return { ok: false, reason: "busy" };
+  const snap = await ref.get();
+  if (!snap.exists) return { ok: false, reason: "missing" };
+  return fn(ref, snap.data());
+}
+
+// ── 대여 ──
+let rentId = null;
+function openRent(id) {
+  const c = state.cars.find((x) => x.id === id);
+  if (!c || !isFree(c)) return toast("이 차는 지금 빌릴 수 없어요");
+  rentId = id;
+  $("rentCar").textContent = `${c.model} · ${c.plate} · ${c.place} · ${km(c.mileage_km)}`;
+  const me = state.staff.find((s) => s.name === getMe());
+  $("rUser").value = me ? me.name : ""; $("rDept").value = me ? me.dept : "";
+  $("rDest").value = ""; $("rPurpose").value = "";
+  const now = new Date(); now.setSeconds(0, 0);
+  $("rDue").min = toLocalInput(now);
+  $("rDue").value = toLocalInput(new Date(now.getTime() + 4 * 3600e3));
+  $("rHint").textContent = `출차 시각(지금)과 출차 주행거리(${km(c.mileage_km)})는 자동으로 적혀요.`;
+  $("rErr").textContent = "";
+  $("rentDlg").showModal();
+  ($("rUser").value ? $("rDest") : $("rUser")).focus();
+}
+$("rUser").addEventListener("change", (e) => { const s = state.staff.find((x) => x.name === e.target.value); if (s) $("rDept").value = s.dept; });
+$("rentForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const user = $("rUser").value, dept = $("rDept").value.trim(), dest = $("rDest").value.trim();
+  if (!user || !dept || !dest) return ($("rErr").textContent = "사용자 · 부서 · 목적지를 적어 주세요");
+  if (!$("rDue").value) return ($("rErr").textContent = "반납 예정 시각을 골라 주세요");
+  const due = new Date($("rDue").value);
+  if (due < Date.now() - 60e3) return ($("rErr").textContent = "반납 예정은 지금 이후로 골라 주세요");
+  $("rSubmit").disabled = true;
+  try {
+    const res = await withCarLock(rentId, async (ref, car) => {
+      if (car.in_repair) return { ok: false, reason: "repair" };
+      if (car.trip) return { ok: false, reason: "taken" };
+      const tripRef = state.db.collection("trips").doc();
+      const trip = { id: tripRef.id, user, dept, dest, purpose: $("rPurpose").value.trim() || null,
+                     out_at: new Date().toISOString(), out_km: car.mileage_km, due_at: due.toISOString() };
+      await ref.update({ trip });
+      await tripRef.set({ plate: car.plate, ...trip, ret_at: null, ret_km: null, ret_by: null });
+      return { ok: true, plate: car.plate };
+    });
+    if (!res.ok) {
+      $("rErr").textContent = res.reason === "repair" ? "정비중인 차는 빌릴 수 없어요"
+        : res.reason === "taken" || res.reason === "busy" ? "방금 다른 분이 빌렸어요. 다른 차를 골라 주세요." : "차 정보를 찾지 못했어요";
+      return;
+    }
+    setMe(user); $("meSel").value = user;
+    $("rentDlg").close();
+    toast(`${res.plate} 대여 완료 · 동료 화면에도 '사용 중'으로 보여요`);
+  } catch (err) {
+    $("rErr").textContent = err?.code === "invalid_argument" ? "이 화면을 볼 수만 있는 권한이라 대여할 수 없어요." : "저장하지 못했어요. 잠시 후 다시 눌러 주세요.";
+  } finally { $("rSubmit").disabled = false; }
+});
+
+// ── 반납 ──
+let retId = null, bigKmOk = false;
+function openReturn(id) {
+  const c = state.cars.find((x) => x.id === id);
+  if (!c || !c.trip) return toast("이미 반납된 차예요");
+  retId = id; bigKmOk = false;
+  $("retCar").textContent = `${c.model} · ${c.plate} · ${c.trip.user || "미상"} · 출차 ${km(c.trip.out_km ?? c.mileage_km)}`;
+  $("tKm").value = ""; $("tKm").min = c.trip.out_km ?? c.mileage_km;
+  $("tBy").value = getMe() || c.trip.user || state.staff[0]?.name || "";
+  $("tHint").textContent = `출차할 때 ${km(c.trip.out_km ?? c.mileage_km)} → 계기판 숫자를 그대로 적어 주세요`;
+  $("tErr").textContent = ""; $("tSubmit").textContent = "반납하기";
+  $("retDlg").showModal(); $("tKm").focus();
+}
+$("tKm").addEventListener("input", () => {
+  const c = state.cars.find((x) => x.id === retId); if (!c?.trip || !$("tKm").value) return;
+  bigKmOk = false; $("tSubmit").textContent = "반납하기"; $("tErr").textContent = "";
+  const base = c.trip.out_km ?? c.mileage_km, d = Number($("tKm").value) - base;
+  $("tHint").textContent = d >= 0 ? `이번 운행 ${km(d)}` : `출차 주행거리(${km(base)})보다 작아요`;
+});
+$("retForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const c = state.cars.find((x) => x.id === retId);
+  if (!c?.trip) { $("retDlg").close(); return toast("이미 다른 분이 반납했어요"); }
+  const base = c.trip.out_km ?? c.mileage_km, raw = $("tKm").value.trim(), v = Number(raw);
+  if (!raw) return ($("tErr").textContent = "반납 주행거리를 적어 주세요");
+  if (!Number.isInteger(v)) return ($("tErr").textContent = "주행거리는 숫자로만 적어 주세요 (예: 51010)");
+  if (v < base) return ($("tErr").textContent = `출차 주행거리(${km(base)})보다 작을 수 없어요`);
+  if (v - base > 1000 && !bigKmOk) {
+    bigKmOk = true; $("tSubmit").textContent = "맞아요, 반납";
+    return ($("tErr").textContent = `이번 운행이 ${km(v - base)}예요. 1,000km가 넘는데 맞으면 한 번 더 눌러 주세요.`);
+  }
+  $("tSubmit").disabled = true;
+  try {
+    const by = $("tBy").value || null;
+    const res = await withCarLock(retId, async (ref, car) => {
+      if (!car.trip || car.trip.id !== c.trip.id) return { ok: false, reason: "done" };
+      const ret_at = new Date().toISOString();
+      await ref.update({ trip: null, mileage_km: Math.max(car.mileage_km, v) });
+      if (car.trip.id) { try { await state.db.doc("trips/" + car.trip.id).update({ ret_at, ret_km: v, ret_by: by }); } catch {} }
+      return { ok: true, plate: car.plate };
+    });
+    if (!res.ok) { $("tErr").textContent = res.reason === "busy" ? "다른 분이 이 차를 처리 중이에요. 잠시 후 다시 눌러 주세요." : "이미 다른 분이 반납했어요."; return; }
+    $("retDlg").close();
+    toast(`${res.plate} 반납 완료 · 이번 운행 ${km(v - base)}`);
+  } catch (err) {
+    $("tErr").textContent = err?.code === "invalid_argument" ? "이 화면을 볼 수만 있는 권한이라 반납할 수 없어요." : "저장하지 못했어요. 잠시 후 다시 눌러 주세요.";
+  } finally { $("tSubmit").disabled = false; }
+});
+
+// ── 이벤트 ──
+document.addEventListener("click", (e) => {
+  const t = e.target.closest("[data-rent],[data-return],[data-close],.chip");
+  if (!t) return;
+  if (t.dataset.rent) openRent(t.dataset.rent);
+  else if (t.dataset.return) openReturn(t.dataset.return);
+  else if ("close" in t.dataset) t.closest("dialog").close();
+  else if (t.classList.contains("chip")) {
+    state.filter = t.dataset.f;
+    document.querySelectorAll(".chip").forEach((c) => c.setAttribute("aria-pressed", String(c === t)));
+    render();
+  }
+});
+$("q").addEventListener("input", (e) => { state.q = e.target.value; render(); });
+$("meSel").addEventListener("change", (e) => setMe(e.target.value));
+setInterval(render, 60e3);
+
+// ── 공유 저장소 연결 (모든 사람이 같은 현황을 실시간으로 봄) ──
+(async () => {
+  const db = await window.claude?.use?.("db");
+  if (!db) {
+    setLive(false, "연결 안 됨");
+    showBanner("공유 현황에 연결할 수 없어요. claude.ai에 로그인한 상태로 이 페이지를 열어 주세요.");
+    $("trips").innerHTML = `<div class="empty">연결되면 배차 현황이 보여요</div>`;
+    $("cars").innerHTML = `<div class="empty" style="grid-column:1/-1">연결되면 차량 20대가 보여요</div>`;
+    return;
+  }
+  state.db = db;
+  try {
+    const user = await window.claude.use("user");
+    const w = user ? await user.can("data.write") : null;
+    if (w === false) { state.canWrite = false; showBanner("보기 전용 권한이에요. 대여·반납은 편집 권한이 있는 분만 할 수 있어요."); }
+  } catch {}
+
+  let gotCars = false;
+  const timer = setTimeout(() => { if (!gotCars) { setLive(false, "연결이 늦어지고 있어요"); showBanner("현황을 아직 불러오지 못했어요. 인터넷 연결을 확인해 주세요."); } }, 10000);
+  db.collection("staff").onSnapshot((snap) => {
+    state.staff = snap.docs.map((d) => d.data()).sort((a, b) => a.name.localeCompare(b.name, "ko"));
+    fillStaff();
+  }, () => {});
+  db.collection("cars").onSnapshot((snap) => {
+    state.cars = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    state.ready = true;
+    if (!snap.metadata.fromCache) {
+      gotCars = true; clearTimeout(timer);
+      if (state.canWrite) showBanner("");
+      setLive(true, "실시간 연결됨");
+    }
+    render();
+  }, (err) => {
+    clearTimeout(timer);
+    setLive(false, "연결 끊김");
+    showBanner(err.code === "revoked" ? "이 페이지에 대한 접근 권한이 바뀌었어요." : "현황 연결이 끊겼어요. 페이지를 다시 열어 주세요.");
+  });
+})();
+</script>
