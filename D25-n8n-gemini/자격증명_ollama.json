@@ -1,0 +1,8 @@
+[
+  {
+    "id": "d25OllamaLocal01",
+    "name": "Ollama (내 PC)",
+    "type": "ollamaApi",
+    "data": { "baseUrl": "http://host.docker.internal:11434" }
+  }
+]

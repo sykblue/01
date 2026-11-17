@@ -1,0 +1,18 @@
+# Render 블루프린트 — 레포 루트에 이 파일이 있으면 Render › New › Blueprint 로 한 번에 만들어져요
+services:
+  - type: web
+    name: p2-team-chat
+    runtime: node
+    plan: free
+    buildCommand: "true"          # 설치할 패키지 없음
+    startCommand: node server.js  # RENDER 환경이면 0.0.0.0:$PORT 로 열림
+    healthCheckPath: /api/team
+    envVars:
+      - key: LLM_DISABLED         # 키 없이 규칙 기반(오프라인 모드). LLM 을 붙이면 지우고 아래 3개를 넣기
+        value: "1"
+      - key: LLM_BASE_URL
+        sync: false
+      - key: LLM_MODEL
+        sync: false
+      - key: LLM_API_KEY
+        sync: false

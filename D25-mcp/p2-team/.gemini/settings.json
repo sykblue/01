@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "team": {
+      "command": "python",
+      "args": ["mcp/team_server.py"],
+      "trust": true,
+      "description": "우리 조 MCP — 읽기 전용 도구 3개 (list_tasks · get_progress · search_docs)"
+    },
+    "github": {
+      "httpUrl": "https://api.githubcopilot.com/mcp/",
+      "headers": { "Authorization": "Bearer $GITHUB_PAT", "X-MCP-Toolsets": "context,repos,issues,pull_requests" }
+    },
+    "notion": {
+      "httpUrl": "https://mcp.notion.com/mcp"
+    }
+  }
+}

@@ -1,0 +1,12 @@
+# 비밀값 · 로컬 설정
+.env
+.env.*
+!.env.example
+# 설치물 · 캐시
+.venv/
+node_modules/
+__pycache__/
+*.pyc
+.vercel/
+# 노션에서 받은 개인 할 일
+TODO.md

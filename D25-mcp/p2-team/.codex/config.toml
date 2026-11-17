@@ -1,0 +1,13 @@
+[mcp_servers.github]
+url = "https://api.githubcopilot.com/mcp/"
+bearer_token_env_var = "GITHUB_PAT"
+
+[mcp_servers.github.http_headers]
+X-MCP-Toolsets = "context,repos,issues,pull_requests"
+
+[mcp_servers.notion]
+url = "https://mcp.notion.com/mcp"
+
+[mcp_servers.team]
+command = "python"
+args = ["mcp/team_server.py"]

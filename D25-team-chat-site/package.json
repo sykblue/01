@@ -1,0 +1,11 @@
+{
+  "name": "d25-team-chat-site",
+  "version": "1.0.0",
+  "private": true,
+  "description": "우리 조 챗봇 — 읽기 전용 도구 3개(할 일 · 진행률 · 문서) + OpenAI 호환 LLM (로컬 Ollama qwen2.5:3b)",
+  "scripts": {
+    "dev": "node server.js",
+    "test": "node tests/run.js"
+  },
+  "engines": { "node": ">=18" }
+}
